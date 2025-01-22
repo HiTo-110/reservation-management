@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>予約管理</title>
+    <style>
+      .container {
+        display: flex;
+        justify-content: space-between;
+      }
+      table {
+        border-collapse: collapse;
+        width: 45%;
+      }
+      th,
+      td {
+        border: 1px solid black;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .button-container {
+        margin-top: 10px;
+      }
+      .narrow-column {
+        width: 50px; /* 人数の列を狭くする */
+      }
+      .small-input {
+        width: 80px; /* テキストボックスを小さくする */
+      }
+      .highlight {
+        background-color: #f2f2f2; /* 1行目と同じ色 */
+      }
+      .highlighted {
+        background-color: yellow; /* 席時間に応じて背景色を変更する */
+      }
+      .overflow {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    </style>
+    <script>
+      function addRow() {
+        var table = document
+          .getElementById("reservation-table")
+          .getElementsByTagName("tbody")[0];
+        var newRow = table.insertRow();
+        var timeCell = newRow.insertCell(0);
+        var timeSelect = document.createElement("select");
+        [
+          "",
+          "17:00",
+          "17:30",
+          "18:00",
+          "18:30",
+          "19:00",
+          "19:30",
+          "20:00",
+          "20:30",
+          "21:00",
+          "21:30",
+        ].forEach(function (time) {
+          var option = document.createElement("option");
+          option.value = time;
+          option.text = time;
+          timeSelect.appendChild(option);
+        });
+        timeSelect.onchange = updateAnotherTable;
+        timeCell.appendChild(timeSelect);
+
+        var peopleCell = newRow.insertCell(1);
+        var peopleInput = document.createElement("input");
+        peopleInput.type = "text";
+        peopleInput.className = "small-input"; // テキストボックスを小さくする
+        peopleCell.className = "narrow-column"; // 人数の列を狭くする
+        peopleCell.appendChild(peopleInput);
+
+        var tableNumberCell = newRow.insertCell(2);
+        var tableNumberSelect = document.createElement("select");
+        [
+          "",
+          "C1",
+          "C2",
+          "C3",
+          "C4",
+          "C5",
+          "C6",
+          "T11",
+          "T12",
+          "T13",
+          "T14",
+          "T21",
+          "T24",
+          "T26",
+          "T28",
+          "T31",
+          "T33",
+        ].forEach(function (tableNumber) {
+          var option = document.createElement("option");
+          option.value = tableNumber;
+          option.text = tableNumber;
+          tableNumberSelect.appendChild(option);
+        });
+        tableNumberSelect.onchange = updateAnotherTable;
+        tableNumberCell.appendChild(tableNumberSelect);
+
+        var nameCell = newRow.insertCell(3);
+        var nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.className = "small-input"; // テキストボックスを小さくする
+        nameInput.oninput = updateAnotherTable;
+        nameCell.appendChild(nameInput);
+
+        var phoneCell = newRow.insertCell(4);
+        var phoneInput = document.createElement("input");
+        phoneInput.type = "text";
+        phoneInput.className = "small-input"; // テキストボックスを小さくする
+        phoneCell.appendChild(phoneInput);
+
+        var seatingTimeCell = newRow.insertCell(5);
+        var seatingTimeSelect = document.createElement("select");
+        ["", "1h", "1.5h", "2h"].forEach(function (seatingTime) {
+          var option = document.createElement("option");
+          option.value = seatingTime;
+          option.text = seatingTime;
+          seatingTimeSelect.appendChild(option);
+        });
+        seatingTimeSelect.onchange = updateAnotherTable;
+        seatingTimeCell.appendChild(seatingTimeSelect);
+
+        var deleteCell = newRow.insertCell(6);
+        var deleteButton = document.createElement("button");
+        deleteButton.textContent = "削除";
+        deleteButton.onclick = function () {
+          deleteRow(newRow);
+          updateAnotherTable();
+        };
+        deleteCell.appendChild(deleteButton);
+      }
+
+      function deleteRow(row) {
+        var table = document
+          .getElementById("reservation-table")
+          .getElementsByTagName("tbody")[0];
+        if (row.rowIndex > 1) {
+          // 1行目は削除できないようにする
+          table.deleteRow(row.rowIndex - 1);
+        } else {
+          alert("1行目は削除できません。");
+        }
+        updateAnotherTable();
+      }
+
+      function updateAnotherTable() {
+        var reservationTable = document
+          .getElementById("reservation-table")
+          .getElementsByTagName("tbody")[0];
+        var anotherTable = document
+          .getElementById("another-table")
+          .getElementsByTagName("tbody")[0];
+
+        // Clear all names and reset background color in another-table
+        for (var i = 0; i < anotherTable.rows.length; i++) {
+          for (var j = 1; j < anotherTable.rows[i].cells.length; j++) {
+            anotherTable.rows[i].cells[j].textContent = "";
+            anotherTable.rows[i].cells[j].classList.remove("highlighted");
+          }
+        }
+
+        // Update another-table based on reservation-table
+        for (var i = 0; i < reservationTable.rows.length; i++) {
+          var time =
+            reservationTable.rows[i].cells[0].getElementsByTagName("select")[0]
+              .value;
+          var tableNumber =
+            reservationTable.rows[i].cells[2].getElementsByTagName("select")[0]
+              .value;
+          var name =
+            reservationTable.rows[i].cells[3].getElementsByTagName("input")[0]
+              .value;
+          var seatingTime =
+            reservationTable.rows[i].cells[5].getElementsByTagName("select")[0]
+              .value;
+
+          if (time && tableNumber && name) {
+            var timeIndex = [
+              "17:00",
+              "17:30",
+              "18:00",
+              "18:30",
+              "19:00",
+              "19:30",
+              "20:00",
+              "20:30",
+              "21:00",
+              "21:30",
+              "22:00",
+              "22:30",
+            ].indexOf(time) + 1;
+            var tableIndex = [
+              "C1",
+              "C2",
+              "C3",
+              "C4",
+              "C5",
+              "C6",
+              "T11",
+              "T12",
+              "T13",
+              "T14",
+              "T21",
+              "T24",
+              "T26",
+              "T28",
+              "T31",
+              "T33",
+            ].indexOf(tableNumber);
+            var duration = { "1h": 2, "1.5h": 3, "2h": 4 }[seatingTime] || 0;
+
+            if (timeIndex > 0 && tableIndex >= 0) {
+              anotherTable.rows[tableIndex].cells[timeIndex].textContent = name;
+              anotherTable.rows[tableIndex].cells[timeIndex].classList.add("overflow");
+              for (var j = 0; j < duration; j++) {
+                if (timeIndex + j < anotherTable.rows[tableIndex].cells.length) {
+                  anotherTable.rows[tableIndex].cells[timeIndex + j].classList.add(
+                    "highlighted"
+                  );
+                }
+              }
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div>
+        <table id="reservation-table">
+          <thead>
+            <tr>
+              <th>時間</th>
+              <th class="narrow-column">人数</th>
+              <th>卓番</th>
+              <th>名前</th>
+              <th>電話番号</th>
+              <th>席時間</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <select onchange="updateAnotherTable()">
+                  <option></option>
+                  <option>17:00</option>
+                  <option>17:30</option>
+                  <option>18:00</option>
+                  <option>18:30</option>
+                  <option>19:00</option>
+                  <option>19:30</option>
+                  <option>20:00</option>
+                  <option>20:30</option>
+                  <option>21:00</option>
+                  <option>21:30</option>
+                </select>
+              </td>
+              <td class="narrow-column">
+                <input type="text" class="small-input" value="" />
+              </td>
+              <td>
+                <select onchange="updateAnotherTable()">
+                  <option></option>
+                  <option>C1</option>
+                  <option>C2</option>
+                  <option>C3</option>
+                  <option>C4</option>
+                  <option>C5</option>
+                  <option>C6</option>
+                  <option>T11</option>
+                  <option>T12</option>
+                  <option>T13</option>
+                  <option>T14</option>
+                  <option>T21</option>
+                  <option>T24</option>
+                  <option>T26</option>
+                  <option>T28</option>
+                  <option>T31</option>
+                  <option>T33</option>
+                </select>
+              </td>
+              <td>
+                <input
+                  type="text"
+                  class="small-input"
+                  value=""
+                  oninput="updateAnotherTable()"
+                />
+              </td>
+              <td><input type="text" class="small-input" value="" /></td>
+              <td>
+                <select onchange="updateAnotherTable()">
+                  <option></option>
+                  <option>1h</option>
+                  <option>1.5h</option>
+                  <option>2h</option>
+                </select>
+              </td>
+              <td>
+                <button
+                  onclick="deleteRow(this.parentNode.parentNode); updateAnotherTable();"
+                >
+                  削除
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="button-container">
+          <button onclick="addRow()">行を追加</button>
+        </div>
+      </div>
+      <div>
+        <table id="another-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>17:00</th>
+              <th>17:30</th>
+              <th>18:00</th>
+              <th>18:30</th>
+              <th>19:00</th>
+              <th>19:30</th>
+              <th>20:00</th>
+              <th>20:30</th>
+              <th>21:00</th>
+              <th>21:30</th>
+              <th>22:00</th>
+              <th>22:30</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="highlight">C1</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">C2</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">C3</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">C4</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">C5</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">C6</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">T11</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">T12</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">T13</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">T14</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">T21</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">T24</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">T26</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">T28</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">T31</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td class="highlight">T33</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
